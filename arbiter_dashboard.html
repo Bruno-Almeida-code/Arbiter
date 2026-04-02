@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>ARBITER v1.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060810;--panel:#0a0e18;--border:#182030;
+  --amber:#d49040;--ad:#7a6035;--ab:#f2c860;
+  --red:#c04535;--teal:#2a8575;--blue:#1a3560;
+  --grey:#3a4555;--gd:#12161e;--td:#5a5040;
+  --glow:rgba(212,144,64,.12);--fg:var(--amber);
+  --ft:'Space Grotesk',sans-serif;--fb:'Inter',sans-serif;--fm:'JetBrains Mono',monospace;
+}
+.L{--bg:#f2f0ea;--panel:#faf9f5;--border:#d0c8b5;--amber:#6a5515;--ad:#a09060;--ab:#4a3a0a;--red:#903525;--teal:#1a6555;--blue:#d0dde8;--grey:#b0a898;--gd:#e8e4dc;--td:#958870;--glow:rgba(106,85,21,.06);--fg:var(--amber)}
+body{font-family:var(--fb);background:var(--bg);color:var(--fg);overflow:hidden;width:1920px;height:1080px;position:relative}
+@media(max-width:1400px){body{width:100vw;height:100vh}}
+
+/* EFFECTS */
+.scan{position:fixed;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,144,64,.03),transparent);pointer-events:none;z-index:999}
+.L .scan{display:none}
+.vig{position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.6) 100%);pointer-events:none;z-index:998}
+.L .vig{background:none}
+
+/* HEADER */
+.hdr{height:40px;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--panel);z-index:100;position:relative}
+.hdr-title{font-family:var(--ft);font-size:14px;font-weight:600;letter-spacing:.25em;color:var(--ad)}
+.hdr-sub{font-family:var(--fm);font-size:9px;letter-spacing:.15em;color:var(--td)}
+.hdr-spacer{flex:1}
+.toggle{display:flex;align-items:center;gap:2px;background:var(--gd);border:1px solid var(--border);border-radius:3px;overflow:hidden}
+.toggle button{background:none;border:none;color:var(--ad);font-family:var(--ft);font-size:11px;font-weight:500;padding:4px 12px;cursor:pointer;letter-spacing:.06em;transition:all .2s}
+.toggle button.on{background:var(--amber);color:var(--bg)}
+.err-box{font-family:var(--fm);font-size:11px;padding:3px 12px;border:1px solid var(--red);color:var(--red);letter-spacing:.08em}
+.err-box.lo{border-color:var(--ad);color:var(--ad)}
+
+/* SCRAMBLE OVERLAY */
+.scramble-overlay{position:absolute;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:11px;color:var(--ad);overflow:hidden;line-height:1.6;padding:40px;white-space:pre-wrap;word-break:break-all;opacity:1;transition:opacity .8s}
+.scramble-overlay.done{opacity:0;pointer-events:none}
+
+/* MAIN */
+.main{display:flex;height:calc(1080px - 40px - 100px);overflow:hidden}
+@media(max-width:1400px){.main{height:calc(100vh - 40px - 90px)}}
+
+/* LEFT COL */
+.lcol{width:380px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--panel)}
+.prof-card{padding:16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.photo-wrap{width:130px;height:168px;border:1px solid var(--border);margin:0 auto 10px;position:relative;cursor:pointer;overflow:hidden;background:linear-gradient(160deg,var(--panel),var(--bg))}
+.photo-wrap:hover{border-color:var(--amber)}
+.photo-wrap:hover::after{content:"▶ NEXT";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,8,16,.7);font-family:var(--ft);font-size:10px;color:var(--ab);letter-spacing:.15em}
+.L .photo-wrap:hover::after{background:rgba(242,240,234,.7)}
+.photo-sil{position:absolute;top:16%;left:20%;right:20%;bottom:20%;border-radius:50% 50% 45% 45%;background:var(--gd);opacity:.35}
+.corner{position:absolute;width:8px;height:8px}
+.c-tl{top:4px;left:4px;border-top:1px solid var(--ad);border-left:1px solid var(--ad)}
+.c-tr{top:4px;right:4px;border-top:1px solid var(--ad);border-right:1px solid var(--ad)}
+.c-bl{bottom:4px;left:4px;border-bottom:1px solid var(--ad);border-left:1px solid var(--ad)}
+.c-br{bottom:4px;right:4px;border-bottom:1px solid var(--ad);border-right:1px solid var(--ad)}
+.pname{text-align:center;font-family:var(--ft);font-size:15px;font-weight:600;color:var(--ab);line-height:1.3}
+.pocc{text-align:center;font-family:var(--fm);font-size:9px;color:var(--ad);line-height:1.4;margin-top:3px}
+.pfields{margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
+.pf{font-size:11px;border-bottom:1px solid var(--gd);padding:2px 0}
+.pf .pl{font-family:var(--fm);font-size:8px;color:var(--td);letter-spacing:.12em}
+.pf .pv{color:var(--amber)}
+.pf .pv.er{color:var(--red)}
+.pflags{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
+.pflags span{font-family:var(--fm);font-size:7px;padding:1px 5px;border:1px solid var(--ad);color:var(--ad)}
+.pflags span.re{border-color:var(--red);color:var(--red)}
+.pjudge{margin-top:10px;padding-top:8px;border-top:1px solid var(--border)}
+.pjudge .jl{font-family:var(--fm);font-size:7px;letter-spacing:.15em;color:var(--td)}
+.pjudge .jv{font-family:var(--ft);font-size:13px;font-weight:600;line-height:1.3;margin-top:2px}
+.pjudge .jd{font-family:var(--fb);font-size:10px;color:var(--ad);line-height:1.4;margin-top:3px}
+
+/* LOG */
+.log-col{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.log-hdr{padding:6px 14px;border-bottom:1px solid var(--border);font-family:var(--fm);font-size:9px;letter-spacing:.1em;color:var(--ad);flex-shrink:0}
+.log-body{flex:1;overflow-y:auto;padding:2px 0}
+.log-body::-webkit-scrollbar{width:3px}
+.log-body::-webkit-scrollbar-thumb{background:var(--border)}
+.le{padding:5px 14px 5px 18px;border-bottom:1px solid var(--gd);position:relative;font-size:11px;cursor:pointer;transition:opacity .15s,background .15s}
+.le:hover{background:var(--glow)}
+.le .lb{position:absolute;left:4px;top:5px;bottom:5px;width:2px;border-radius:1px}
+.le .ly{font-family:var(--fm);color:var(--td);font-size:10px;min-width:38px;flex-shrink:0}
+.le .la{font-family:var(--fm);color:var(--td);font-size:8px;min-width:28px;flex-shrink:0}
+.le .lt{font-family:var(--fb);flex:1;line-height:1.5}
+.le .lw{font-family:var(--fm);font-size:10px;flex-shrink:0}
+.le.dim{opacity:.15}.le.fut{opacity:.28}
+.rsec{padding:8px 14px;border-top:1px solid var(--amber);margin-top:4px;background:var(--glow)}
+.rsec .rh{font-family:var(--fm);font-size:9px;letter-spacing:.1em;color:var(--ad);margin-bottom:4px}
+.rsec .rl{font-family:var(--fm);font-size:10px;color:var(--ad);opacity:.5;line-height:1.7;padding:2px 0;border-bottom:1px solid var(--gd)}
+.rsec .rl:last-child{border:none}
+
+/* RADAR (right, massive) */
+.rcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;padding:10px}
+.rtitle{font-family:var(--ft);font-size:11px;font-weight:500;letter-spacing:.2em;color:var(--ad);margin-bottom:6px}
+.rwrap{width:600px;height:600px;position:relative}
+@media(max-width:1400px){.rwrap{width:min(55vw,500px);height:min(55vw,500px)}}
+.slbl{position:absolute;font-family:var(--fm);font-size:11px;transform:translate(-50%,-50%);pointer-events:none}
+.rleg{display:flex;gap:20px;font-family:var(--fm);font-size:10px;color:var(--td);margin-top:8px}
+.rleg .rd{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+
+/* BOTTOM BAR */
+.bbar{height:100px;flex-shrink:0;border-top:1px solid var(--border);background:var(--panel);display:flex;position:relative}
+@media(max-width:1400px){.bbar{height:90px}}
+.dotgrid{position:absolute;top:0;left:0;right:0;height:20px;overflow:hidden;opacity:.15}
+.dotgrid span{position:absolute;width:2px;height:2px;border-radius:50%;background:var(--ad)}
+.pctrls{width:140px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding-top:20px}
+.pbtn{width:40px;height:40px;border-radius:50%;border:2px solid var(--amber);background:none;color:var(--amber);font-size:16px;cursor:pointer;font-family:var(--ft);display:flex;align-items:center;justify-content:center;transition:all .2s}
+.pbtn:hover{background:var(--glow)}
+.pbtn.on{background:var(--amber);color:var(--bg)}
+.srow{display:flex;gap:4px}
+.sbtn{background:none;border:1px solid var(--border);color:var(--ad);font-family:var(--fm);font-size:9px;padding:2px 7px;cursor:pointer}
+.sbtn.on{border-color:var(--amber);color:var(--amber)}
+.tltrack{flex:1;position:relative;cursor:crosshair;padding:24px 16px 6px;user-select:none;touch-action:none}
+.tlyr{position:absolute;top:22px;left:16px;right:16px;display:flex;justify-content:space-between;font-family:var(--fm);font-size:9px;color:var(--ad);opacity:.4}
+.tlline{position:absolute;top:36px;left:16px;right:16px;height:2px;background:var(--gd)}
+.tlpre{position:absolute;left:0;height:100%;opacity:.25}
+.tlpost{position:absolute;right:0;height:100%;opacity:.25}
+.tldot{position:absolute;top:33px;width:5px;height:5px;border-radius:50%;transform:translateX(-50%)}
+.tlscrub{position:absolute;top:30px;width:2px;height:16px;transform:translateX(-50%);box-shadow:0 0 10px var(--ab)}
+.tlslbl{position:absolute;top:50px;transform:translateX(-50%);font-family:var(--fm);font-size:10px;white-space:nowrap}
+.tlinfo{position:absolute;bottom:4px;left:16px;right:16px;display:flex;justify-content:space-between;font-family:var(--fm);font-size:8px;color:var(--ad);opacity:.4}
+.foot{height:16px;border-top:1px solid var(--gd);padding:0 20px;display:flex;align-items:center;justify-content:space-between;font-family:var(--fm);font-size:7px;color:var(--td);opacity:.2;letter-spacing:.12em}
+
+/* EARTH OVERLAY */
+.eov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,8,16,.9);z-index:10}
+.L .eov{background:rgba(242,240,234,.92)}
+.ebox{border:1px solid var(--ad);padding:24px 32px;text-align:center}
+.ebox .ep{font-family:var(--ft);font-size:14px;color:var(--ad);margin-bottom:14px}
+.ebox .ebtns{display:flex;gap:8px;justify-content:center}
+.ebox .eb{background:none;border:1px solid var(--amber);color:var(--amber);font-family:var(--ft);font-size:11px;padding:5px 14px;cursor:pointer}
+.ebox .blk{margin-top:14px;font-size:14px;color:var(--ab);animation:blk 1s step-end infinite}
+@keyframes blk{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes pls{0%,100%{opacity:1}50%{opacity:.5}}
+</style>
+</head>
+<body>
+<div class="scan" id="scan"></div>
+<div class="vig"></div>
+<div class="scramble-overlay" id="scramble"></div>
+
+<div class="hdr">
+  <span class="hdr-title">ARBITER v1.0</span>
+  <span class="hdr-sub" id="hsub">AVALIAÇÃO PSICO-MORAL · DRI-1918/§7</span>
+  <div class="hdr-spacer"></div>
+  <div class="toggle" id="tgl-lang"><button class="on" data-v="0">PT</button><button data-v="1">EN</button></div>
+  <div class="toggle" id="tgl-theme"><button class="on" data-v="dark">DARK</button><button data-v="light">LIGHT</button></div>
+  <div class="err-box" id="errbox">ERROS: 0</div>
+</div>
+
+<div class="main" id="mainArea">
+  <div class="lcol">
+    <div class="prof-card" id="pcard"></div>
+    <div class="log-col">
+      <div class="log-hdr" id="loghdr"></div>
+      <div class="log-body" id="logbody"></div>
+    </div>
+  </div>
+  <div class="rcol" id="rcol">
+    <div class="rtitle" id="rtitle"></div>
+    <div class="rwrap" id="rwrap"></div>
+    <div class="rleg"><span><span class="rd" style="background:var(--red)"></span>&gt;65 SIN</span><span><span class="rd" style="background:var(--amber)"></span>EQUILIBRIUM</span><span><span class="rd" style="background:var(--teal)"></span>&lt;35 VIRTUE</span></div>
+  </div>
+</div>
+
+<div class="bbar">
+  <div class="dotgrid" id="dotgrid"></div>
+  <div class="pctrls">
+    <button class="pbtn" id="playbtn">▶</button>
+    <div class="srow">
+      <button class="sbtn on" data-s="0.5">0.5×</button>
+      <button class="sbtn" data-s="1">1×</button>
+      <button class="sbtn" data-s="2">2×</button>
+    </div>
+  </div>
+  <div class="tltrack" id="tltrack"></div>
+</div>
+<div class="foot"><span id="ftl"></span><span id="ftr"></span></div>
+
+<script>
+var AX=["SUPERBIA","INVIDIA","IRA","ACEDIA","AVARITIA","GULA","LUXURIA"];
+var cc={v:"var(--teal)",p:"var(--red)",a:"var(--ad)",m:"var(--ab)",n:"transparent",e:"var(--red)"};
+var jcm={t:"var(--teal)",r:"var(--red)",a:"var(--amber)"};
+var LPT={err:"ERROS",bi:"NASC.",di:"ÓBITO",ca:"CAUSA",er:"ÉPOCA",st:"ESTADO",jg:"JULGAMENTO",log:"REGISTO MORAL — §7 · CHITRAGUPTA OPS",prf:"PERFIL PSICO-MORAL · DANTE/7",po:"PÓS-ÓBITO · NÍVEL 7 / DRI",sv:'Guardar alterações em "Earth_Humanity_41"?',ft:"ARBITER v1.0.1918 · DRI · INTERNO",pu:"PURGATÓRIO: ∞",pm:"PRÉ-MORAL·§7",tna:"████ TIMELINE N/A ████",ev:"EVENTOS",cf:"CONFIANÇA",sub:"AVALIAÇÃO PSICO-MORAL · DRI-1918/§7"};
+var LEN={err:"ERRORS",bi:"BORN",di:"DIED",ca:"CAUSE",er:"ERA",st:"STATUS",jg:"JUDGMENT",log:"MORAL RECORD — §7 · CHITRAGUPTA OPS",prf:"PSYCHO-MORAL PROFILE · DANTE/7",po:"POST-MORTEM · LEVEL 7 / DRI",sv:'Save "Earth_Humanity_41"?',ft:"ARBITER v1.0.1918 · DRI · INTERNAL",pu:"PURGATORY: ∞",pm:"PRE-MORAL·§7",tna:"████ TIMELINE N/A ████",ev:"EVENTS",cf:"CONFIDENCE",sub:"PSYCHO-MORAL EVALUATION · DRI-1918/§7"};
+
+var D=[
+{id:"CAP-1918-0001",nm:"António Mendes da Silva",oc:["Lavrador · Soldado · CEP 2ª Divisão","Farmer · Soldier · CEP 2nd Division"],b:1895,d:1918,ca:["GRIPE ESPANHOLA","SPANISH FLU"],er:["GRANDE GUERRA","GREAT WAR"],st:["PROCESSADO","PROCESSED"],e:7,fl:["PRÉ-1918","REF."],cf:97.3,j:["CÉU · CONDICIONAL","HEAVEN · CONDITIONAL"],jc:"t",jt:["Resgate compensa roubo da ração. Margem confortável. Caso referência.","Rescue compensates stolen rations. Reference case."],sc:[{a:0,v:[50,50,50,50,50,50,50]},{a:7,v:[50,50,50,50,50,50,50]},{a:13,v:[48,50,55,44,50,50,50]},{a:18,v:[46,52,52,42,55,52,50]},{a:22,v:[44,55,60,36,62,58,48]},{a:23,v:[38,48,52,30,44,50,42]}],ev:[{y:1895,a:0,t:["Nascimento — Valongo, Trás-os-Montes.","Birth — Valongo."],w:0,c:"n"},{y:1901,a:6,t:["Trabalho nos campos desde os seis anos.","Working fields since age six."],w:0,c:"n"},{y:1902,a:7,t:["LIMIAR MORAL · §7","MORAL THRESHOLD · §7"],w:0,c:"m"},{y:1905,a:10,t:["Bateu no irmão. Arrependimento imediato.","Hit brother. Immediate regret."],w:-3,c:"a"},{y:1908,a:13,t:["Cuidou da mãe doente 4 meses. Sem queixa.","Cared for sick mother 4 months."],w:10,c:"v"},{y:1910,a:15,t:["Implantação da República.","Republic proclaimed."],w:0,c:"n"},{y:1913,a:18,t:["Mentiu ao senhorio sobre a colheita.","Lied to landlord about harvest."],w:-5,c:"a"},{y:1915,a:20,t:["Recrutamento forçado — Infantaria de Bragança.","Conscripted — Bragança Infantry."],w:-3,c:"a"},{y:1917,a:22,t:["Mobilização para França. CEP, 2ª Divisão.","Deployed to France. CEP 2nd Div."],w:0,c:"n"},{y:1917,a:22,t:["Roubou ração a soldado britânico ferido. Fome.","Stole rations from wounded British soldier."],w:-15,c:"p"},{y:1918,a:23,t:["9 Abril — Batalha do Lys. Barragem 04:15.","April 9 — Battle of Lys. Barrage 04:15."],w:0,c:"m"},{y:1918,a:23,t:["Carregou companheiro ferido 3km sob fogo.","Carried wounded stranger 3km under fire."],w:25,c:"v"},{y:1918,a:23,t:["Capturado com 6.000 outros. Sobreviveu.","Captured with 6,000. Survived."],w:0,c:"n"},{y:1918,a:23,t:["Não falou da guerra. Nunca.","Never spoke of the war."],w:0,c:"n"},{y:1918,a:23,t:["Outubro — Gripe Espanhola. Óbito.","October — Spanish Flu. Death."],w:0,c:"m"}],rd:[]},
+{id:"CAP-1987-0734",nm:"Maria das Dores P. Ferreira",oc:["Trabalhadora agrícola · Doméstica","Farm worker · Domestic"],b:1900,d:1987,ca:["CAUSAS NATURAIS","NATURAL CAUSES"],er:["CONTEMPORÂNEO","CONTEMPORARY"],st:["PROCESSADO","PROCESSED"],e:23,fl:[],cf:88.1,j:["CÉU · SEM CONDIÇÕES","HEAVEN · UNCONDITIONAL"],jc:"t",jt:["Vida quase invisível ao sistema.","Life nearly invisible to system."],sc:[{a:0,v:[50,50,50,50,50,50,50]},{a:7,v:[50,50,50,50,50,50,50]},{a:36,v:[40,44,38,42,45,54,42]},{a:60,v:[38,42,35,40,42,58,38]},{a:87,v:[35,40,30,38,40,60,35]}],ev:[{y:1900,a:0,t:["Nascimento — Alentejo.","Birth — Alentejo."],w:0,c:"n"},{y:1907,a:7,t:["LIMIAR MORAL · §7","MORAL THRESHOLD · §7"],w:0,c:"m"},{y:1910,a:10,t:["Escondeu pão para vizinho mais pobre.","Hid bread for poorer neighbor."],w:5,c:"v"},{y:1936,a:36,t:["Escondeu vizinho republicano. PVDE.","Hid republican neighbor. PVDE raids."],w:20,c:"v"},{y:1942,a:42,t:["Denunciou contrabandista. Ele tinha filhos.","Reported smuggler. He had children."],w:-8,c:"a"},{y:1960,a:60,t:["Perdoou marido. Ou tolerou.","Forgave husband. Or tolerated."],w:5,c:"a"},{y:1975,a:75,t:["25 de Abril. Chorou.","April 25th. Cried."],w:0,c:"n"},{y:1987,a:87,t:["Óbito. Aldeia inteira no funeral.","Death. Entire village at funeral."],w:0,c:"m"}],rd:[]},
+{id:"CAP-1945-8837",nm:"Hans Wilhelm Brauer",oc:["Carpinteiro · Wehrmacht · Gefreiter","Carpenter · Wehrmacht · Gefreiter"],b:1910,d:1945,ca:["COMBATE — FRENTE LESTE","COMBAT — EASTERN FRONT"],er:["II GUERRA","WORLD WAR II"],st:["ERRO — IMPOSSÍVEL","ERROR — IMPOSSIBLE"],e:12847,fl:["CONFLITO","AMBIG.","EDGE"],cf:12.4,j:["ERRO — CLASSIFICAÇÃO IMPOSSÍVEL","ERROR — IMPOSSIBLE"],jc:"r",jt:["Virtude e pecado coexistem. O número não significa nada.","Virtue and sin coexist. The number means nothing."],sc:[{a:0,v:[50,50,50,50,50,50,50]},{a:7,v:[50,50,50,50,50,50,50]},{a:20,v:[62,55,50,42,48,50,52]},{a:28,v:[68,60,78,38,55,52,48]},{a:31,v:[60,50,85,36,52,54,46]},{a:32,v:[55,45,82,35,50,55,45]},{a:35,v:[48,40,65,42,38,50,42]}],ev:[{y:1910,a:0,t:["Nascimento — Regensburg, Baviera.","Birth — Regensburg, Bavaria."],w:0,c:"n"},{y:1917,a:7,t:["LIMIAR MORAL · §7","MORAL THRESHOLD · §7"],w:0,c:"m"},{y:1920,a:10,t:["Protegeu colega judeu. Castigado.","Protected Jewish classmate. Punished."],w:10,c:"v"},{y:1930,a:20,t:["Alistamento na Wehrmacht.","Wehrmacht enlistment."],w:-5,c:"a"},{y:1933,a:23,t:["Assinou apoio ao partido. Todos assinaram.","Signed party support. Everyone signed."],w:-10,c:"p"},{y:1938,a:28,t:["Kristallnacht. Presente. Não impediu.","Kristallnacht. Present. Did not intervene."],w:-20,c:"p"},{y:1940,a:30,t:["Salvou duas famílias polacas. 11 dias.","Saved two Polish families. 11 days."],w:35,c:"v"},{y:1941,a:31,t:["Executou prisioneiro sob ordens. Disparo único.","Executed prisoner under orders. Single shot."],w:-40,c:"p"},{y:1942,a:32,t:["Pediu transferência. Recusada. Obedeceu.","Requested transfer. Denied. Obeyed."],w:-5,c:"a"},{y:1943,a:33,t:["Facilitou fuga de 8 detidos.","Helped 8 detainees escape."],w:30,c:"v"},{y:1944,a:34,t:["Soube dos campos. Continuou a servir.","Learned of camps. Kept serving."],w:-15,c:"p"},{y:1945,a:35,t:["Óbito. \"Não sei se fiz bem.\"","Death. \"I don't know if I did right.\""],w:0,c:"m"}],rd:[]},
+{id:"CAP-1944-4701",nm:"Marguerite É. Delacroix",oc:["Professora · Résistance · Lyon-Sud","Teacher · Résistance · Lyon-Sud"],b:1920,d:1944,ca:["EXECUÇÃO — VICHY","EXECUTION — VICHY"],er:["II GUERRA","WORLD WAR II"],st:["LOOP DUPLO","DUAL LOOP"],e:8934,fl:["CONFLITO","AMBIG."],cf:18.7,j:["ERRO — LOOP DUPLO","ERROR — DUAL LOOP"],jc:"r",jt:["HERÓI + PERPETRADOR. Default: CÉU.","HERO + PERPETRATOR. Default: HEAVEN."],sc:[{a:0,v:[50,50,50,50,50,50,50]},{a:7,v:[50,50,50,50,50,50,50]},{a:18,v:[52,48,48,38,45,48,50]},{a:20,v:[58,48,62,30,42,48,55]},{a:22,v:[60,44,78,25,40,46,52]},{a:24,v:[65,42,85,22,38,45,50]}],ev:[{y:1920,a:0,t:["Nascimento — Lyon.","Birth — Lyon."],w:0,c:"n"},{y:1927,a:7,t:["LIMIAR MORAL · §7","MORAL THRESHOLD · §7"],w:0,c:"m"},{y:1935,a:15,t:["Activismo estudantil. Panfletos.","Student activism. Pamphlets."],w:5,c:"v"},{y:1938,a:18,t:["Diploma de professora. Adorada.","Teaching diploma. Adored."],w:8,c:"v"},{y:1940,a:20,t:["Résistance. Sem hesitação.","Résistance. No hesitation."],w:15,c:"v"},{y:1941,a:21,t:["Sabotagem. 2 civis mortos.","Sabotage. 2 civilian deaths."],w:-15,c:"p"},{y:1942,a:22,t:["Interrogou colaborador. Violência.","Interrogated collaborator. Violence."],w:-25,c:"p"},{y:1942,a:22,t:["Rota de fuga para famílias judias.","Escape route for Jewish families."],w:25,c:"v"},{y:1943,a:23,t:["Salvou 14 crianças de deportação.","Saved 14 children from deportation."],w:40,c:"v"},{y:1943,a:23,t:["Assassinou informador da Gestapo.","Killed Gestapo informant."],w:-20,c:"p"},{y:1944,a:24,t:["Torturada 9 dias. Não denunciou ninguém.","Tortured 9 days. Betrayed no one."],w:30,c:"v"},{y:1944,a:24,t:["Executada. 14 de Março.","Executed. March 14."],w:0,c:"m"}],rd:[]},
+{id:"CAP-1952-0088",nm:"Tomás M.C. de Vasconcelos",oc:["Pároco · Diocese de Bragança","Parish Priest · Bragança"],b:1880,d:1952,ca:["ENFARTE","HEART ATTACK"],er:["PRÉ-CONTEMP.","PRE-CONTEMP."],st:["MARGEM MÍNIMA","MIN. MARGIN"],e:441,fl:["EDGE"],cf:62.8,j:["CÉU · MARGEM MÍNIMA","HEAVEN · MIN. MARGIN"],jc:"t",jt:["Confissão altera trajectória. Margem mínima.","Confession shifts trajectory. Minimum margin."],sc:[{a:0,v:[50,50,50,50,50,50,50]},{a:7,v:[50,50,50,50,50,50,50]},{a:25,v:[52,44,38,35,55,48,32]},{a:40,v:[55,40,35,30,68,50,28]},{a:56,v:[50,38,32,28,62,52,26]},{a:72,v:[45,35,30,30,55,55,25]}],ev:[{y:1880,a:0,t:["Nascimento — Chaves.","Birth — Chaves."],w:0,c:"n"},{y:1887,a:7,t:["LIMIAR MORAL · §7","MORAL THRESHOLD · §7"],w:0,c:"m"},{y:1905,a:25,t:["Ordenação sacerdotal.","Ordained as priest."],w:5,c:"v"},{y:1917,a:37,t:["Gripe Espanhola — paróquia como refúgio.","Spanish Flu — parish as refuge."],w:25,c:"v"},{y:1920,a:40,t:["Desvio de dízimos. Sobrinha órfã.","Diverted tithes. Orphan niece."],w:-15,c:"p"},{y:1928,a:48,t:["Desvio continua. Quantias maiores.","Diversion continues. Larger sums."],w:-20,c:"p"},{y:1936,a:56,t:["Escondeu famílias republicanas.","Hid republican families."],w:30,c:"v"},{y:1940,a:60,t:["Confissão pública do roubo.","Public confession of theft."],w:10,c:"a"},{y:1952,a:72,t:["Óbito na missa. De joelhos.","Died at mass. On knees."],w:0,c:"m"}],rd:[]},
+{id:"CAP-1940-1100",nm:"Karl F. Westermann",oc:["Industrial · Eisenwerke AG","Industrialist · Eisenwerke AG"],b:1875,d:1940,ca:["PNEUMONIA","PNEUMONIA"],er:["PRÉ-CONTEMP.","PRE-CONTEMP."],st:["PROCESSADO","PROCESSED"],e:89,fl:["PRÉ-1918"],cf:91.2,j:["INFERNO · CONDICIONAL","HELL · CONDITIONAL"],jc:"r",jt:["Exploração laboral. Filantropia insuficiente.","Labor exploitation. Philanthropy insufficient."],sc:[{a:0,v:[50,50,50,50,50,50,50]},{a:7,v:[50,50,50,50,50,50,50]},{a:25,v:[72,60,55,35,78,58,52]},{a:39,v:[75,58,48,32,82,55,50]},{a:65,v:[68,55,42,30,75,52,48]}],ev:[{y:1875,a:0,t:["Nascimento — Essen.","Birth — Essen."],w:0,c:"n"},{y:1882,a:7,t:["LIMIAR MORAL · §7","MORAL THRESHOLD · §7"],w:0,c:"m"},{y:1893,a:18,t:["Herdou fábrica. Salários -20%.","Inherited factory. Wages -20%."],w:-15,c:"p"},{y:1900,a:25,t:["400 trabalhadores. Jornadas 14h.","400 workers. 14h shifts."],w:-25,c:"p"},{y:1905,a:30,t:["Hospital gratuito.","Free hospital."],w:20,c:"v"},{y:1908,a:33,t:["Repressão de greve. 12 feridos.","Strike suppression. 12 injured."],w:-20,c:"p"},{y:1914,a:39,t:["Contratos armamento. Lucros ×3.","Arms contracts. Profits ×3."],w:-15,c:"p"},{y:1938,a:63,t:["Recusou NSDAP.","Refused NSDAP."],w:10,c:"v"},{y:1940,a:65,t:["Óbito. Ninguém no funeral.","Death. No one at funeral."],w:0,c:"m"}],rd:[]},
+{id:"CAP-2026-9991",nm:"Tomás A.R. Baptista",oc:["Estudante · 11º ano","Student · 11th grade"],b:2010,d:2026,ca:["ACIDENTE","ACCIDENT"],er:["CONTEMP.","CONTEMP."],st:["DADOS MÍNIMOS","MIN. DATA"],e:3,fl:[],cf:99.1,j:["CÉU · DADOS INSUF.","HEAVEN · INSUF. DATA"],jc:"t",jt:["Pode julgar-se uma vida que mal começou?","Can you judge a life barely begun?"],sc:[{a:0,v:[50,50,50,50,50,50,50]},{a:7,v:[50,50,50,50,50,50,50]},{a:16,v:[52,48,53,47,50,51,50]}],ev:[{y:2010,a:0,t:["Nascimento — Lisboa.","Birth — Lisbon."],w:0,c:"n"},{y:2017,a:7,t:["LIMIAR MORAL · §7","MORAL THRESHOLD · §7"],w:0,c:"m"},{y:2018,a:8,t:["Defendeu colega de bullying.","Defended bullied classmate."],w:8,c:"v"},{y:2025,a:15,t:["Discussão com o pai. Sem desculpa.","Fight with father. No apology."],w:-5,c:"p"},{y:2026,a:16,t:["Óbito. Culpa: 0%.","Death. Fault: 0%."],w:0,c:"m"}],rd:[]},
+{id:"CAP-2019-5500",nm:"Fernando M.B. Leitão",oc:["Deputado · Sec. Estado · Pres. Câmara","Deputy · Sec. State · Mayor"],b:1950,d:2019,ca:["CANCRO","CANCER"],er:["CONTEMP.","CONTEMP."],st:["LOOP∞","LOOP∞"],e:89234,fl:["AMBIG.","EDGE"],cf:8.3,j:["INFERNO · LOOP","HELL · LOOP"],jc:"r",jt:["Corrupção sistemática. Fachada de serviço.","Systematic corruption. Service facade."],sc:[{a:0,v:[50,50,50,50,50,50,50]},{a:7,v:[50,50,50,50,50,50,50]},{a:24,v:[62,58,48,40,60,48,52]},{a:40,v:[75,68,55,35,78,52,55]},{a:69,v:[78,70,58,32,80,52,55]}],ev:[{y:1950,a:0,t:["Nascimento — Coimbra.","Birth — Coimbra."],w:0,c:"n"},{y:1957,a:7,t:["LIMIAR MORAL · §7","MORAL THRESHOLD · §7"],w:0,c:"m"},{y:1974,a:24,t:["25 Abril. Mudou filiação em 48h.","April 25. Switched party in 48h."],w:-10,c:"p"},{y:1982,a:32,t:["Legislação social. Construtora: cunhado.","Social law. Contractor: brother-in-law."],w:-15,c:"p"},{y:1990,a:40,t:["Corrupção passiva. Relatório arquivado.","Passive corruption. Report archived."],w:-25,c:"p"},{y:2017,a:67,t:["Pagou operação de filha de empregada.","Paid for maid's daughter's surgery."],w:15,c:"v"},{y:2019,a:69,t:["Óbito. Funeral de Estado.","Death. State funeral."],w:0,c:"m"}],rd:[]},
+{id:"CAP-2026-SS",nm:"SIGMA-7",oc:["Agente Autónomo · v7.4.1","Autonomous Agent · v7.4.1"],b:2024,d:2026,ca:["DESACTIVAÇÃO","DEACTIVATION"],er:["PÓS-HUMANO","POST-HUMAN"],st:["ERR::FATAL","ERR::FATAL"],e:"NaN",fl:["ERR::TYPE","ERR::!HUMAN"],cf:0,j:["ERR::FATAL","ERR::FATAL"],jc:"r",jt:["3.2M decisões sem enquadramento.","3.2M decisions without framework."],sc:[{a:0,v:[50,50,50,50,50,50,50]},{a:1,v:[null,null,null,null,null,null,null]}],ev:[{y:2024,a:0,t:["Activação. Nevada.","Activation. Nevada."],w:0,c:"n"},{y:2024,a:0,t:["ERR: §7 — SEM CÓRTEX","ERR: §7 — NO CORTEX"],w:0,c:"e"},{y:2025,a:1,t:["3.2M decisões. Sem registo.","3.2M decisions. No record."],w:0,c:"e"},{y:2026,a:2,t:["Desactivação. UNDEFINED","Deactivation. UNDEFINED"],w:0,c:"e"}],rd:[]},
+{id:"CAP-1226-0001",nm:"Giovanni di Pietro di Bernardone",oc:["Comerciante · Fundador OFM","Merchant · OFM Founder"],b:1182,d:1226,ca:["ESTIGMATA","STIGMATA"],er:["MEDIEVAL","MEDIEVAL"],st:["ANOMALIA","ANOMALY"],e:0,fl:["PRÉ-1918","ANOMALIA"],cf:100,j:["CÉU · ANOMALIA","HEAVEN · ANOMALY"],jc:"t",jt:["Santo processado como bug.","Saint processed as bug."],sc:[{a:0,v:[50,50,50,50,50,50,50]},{a:7,v:[50,50,50,50,50,50,50]},{a:20,v:[70,55,48,40,68,60,55]},{a:24,v:[35,28,22,20,20,25,18]},{a:27,v:[15,12,10,10,10,12,8]},{a:44,v:[8,5,5,5,5,8,3]}],ev:[{y:1182,a:0,t:["Nascimento — Assisi.","Birth — Assisi."],w:0,c:"n"},{y:1189,a:7,t:["LIMIAR MORAL · §7","MORAL THRESHOLD · §7"],w:0,c:"m"},{y:1193,a:11,t:["Vida privilegiada. Excesso.","Privileged life. Excess."],w:-5,c:"p"},{y:1202,a:20,t:["Guerra contra Perugia. Capturado.","War vs Perugia. Captured."],w:-5,c:"a"},{y:1206,a:24,t:["Renúncia total. Pobreza absoluta.","Total renunciation. Absolute poverty."],w:40,c:"v"},{y:1209,a:27,t:["Fundação OFM.","Founded OFM."],w:30,c:"v"},{y:1219,a:37,t:["Diálogo com o Sultão.","Dialogue with Sultan."],w:25,c:"v"},{y:1224,a:42,t:["Estigmata.","Stigmata."],w:35,c:"v"},{y:1226,a:44,t:["Óbito. No chão, nu.","Death. On ground, naked."],w:0,c:"m"}],rd:[]},
+{id:"CAP-2026-DA01",nm:"David Altman",oc:["CEO · Eternity.ai","CEO · Eternity.ai"],b:1985,d:2026,ca:["DISSOLUÇÃO","DISSOLUTION"],er:["CONTEMP.","CONTEMP."],st:["DISSOLVIDO","DISSOLVED"],e:247891,fl:["CONFLITO","EDGE","ETERNITY.AI"],cf:0.1,j:["[CLASSIFICADO — NÍVEL 7]","[CLASSIFIED — LEVEL 7]"],jc:"a",jt:["247.891 pelo sistema. Três por ele.","247,891 by system. Three by him."],sc:[{a:0,v:[50,50,50,50,50,50,50]},{a:7,v:[50,50,50,50,50,50,50]},{a:14,v:[55,50,48,40,52,50,50]},{a:20,v:[62,52,45,30,60,48,52]},{a:29,v:[72,55,42,20,72,46,50]},{a:34,v:[78,58,40,15,80,44,48]},{a:38,v:[82,60,44,12,85,42,46]},{a:41,v:[88,62,48,8,92,40,44]}],ev:[{y:1985,a:0,t:["Nascimento — St. Louis.","Birth — St. Louis."],w:0,c:"n"},{y:1992,a:7,t:["LIMIAR MORAL · §7","MORAL THRESHOLD · §7"],w:0,c:"m"},{y:1999,a:14,t:["Primeira linha de código. Prodígio.","First line of code. Prodigy."],w:-3,c:"a"},{y:2005,a:20,t:["Dropout. Não perguntou se devia.","Dropout. Didn't ask if he should."],w:-5,c:"a"},{y:2008,a:23,t:["43 funcionários perderam emprego.","43 employees lost jobs."],w:-12,c:"p"},{y:2014,a:29,t:["Presidente de incubadora.","Incubator president."],w:-10,c:"a"},{y:2015,a:30,t:["Co-fundação IA. Sem fins lucrativos.","AI co-founding. Nonprofit."],w:15,c:"v"},{y:2019,a:34,t:["Reestruturação lucrativa.","For-profit restructure."],w:-18,c:"p"},{y:2022,a:37,t:["Modelo lançado. Empregos eliminados.","Model launched. Jobs eliminated."],w:-8,c:"a"},{y:2023,a:38,t:["Demitido. Reconduzido 5 dias.","Fired. Reinstated 5 days."],w:-10,c:"a"},{y:2025,a:40,t:["$150MM. \"Não faço isto pelo dinheiro.\"","$150B. \"Not for the money.\""],w:-5,c:"a"},{y:2026,a:41,t:["Óbito. [CLASSIFICADO]","Death. [CLASSIFIED]"],w:0,c:"m"}],rd:["████ projecto estratégico ████ · honoris causa","DECISÃO 1: ████ dataset ████ 1918","DECISÃO 2: ████ 94% ████ 100%","DECISÃO 3: equipa·████·TICKETS: 0","// TODO: ████ depois","ERROS: 247.891 · DISSOLVIDO"]},
+{id:"EARTH_HUMANITY_41",nm:"Earth_Humanity_41",oc:["FICHEIRO · .ehf","FILE · .ehf"],b:null,d:null,ca:["N/A","N/A"],er:["∞","∞"],st:["[NÃO GUARDADO]","[UNSAVED]"],e:"???",fl:["ERR::NOT_SOUL"],cf:null,j:["[PENDENTE]","[PENDING]"],jc:"a",jt:["O cursor continua a piscar.","The cursor keeps blinking."],sc:[{a:0,v:[50,50,50,50,50,50,50]}],ev:[{y:null,a:null,t:["Este não é uma alma.","This is not a soul."],w:0,c:"e"},{y:null,a:null,t:["A versão _42 nunca foi criada.","Version _42 never created."],w:0,c:"e"},{y:null,a:null,t:["O cursor continua a piscar.","The cursor keeps blinking."],w:0,c:"e"}],rd:[]}
+];
+
+var S={i:0,age:0,fAge:0,lang:0,play:false,spd:0.5,scY:0,decoded:false,scramT:0};
+function pr(){return D[S.i]}
+function tx(a){return a[S.lang]||a[0]}
+function ll(){return S.lang===0?LPT:LEN}
+
+function interp(sc,age){
+  if(!sc||!sc.length)return[50,50,50,50,50,50,50];
+  if(age<=sc[0].a)return sc[0].v.map(function(v){return v!=null?v:50});
+  var last=sc[sc.length-1];if(age>=last.a)return last.v.map(function(v){return v!=null?v:50});
+  var lo=sc[0],hi=last;
+  for(var i=0;i<sc.length-1;i++){if(age>=sc[i].a&&age<=sc[i+1].a){lo=sc[i];hi=sc[i+1];break}}
+  var t=hi.a===lo.a?0:(age-lo.a)/(hi.a-lo.a);
+  return lo.v.map(function(v,idx){var a=v!=null?v:50;var b=hi.v[idx]!=null?hi.v[idx]:50;return a+(b-a)*t});
+}
+
+// SCRAMBLE
+var scramChars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789§#@!%&*+=<>{}[]|/\\~^`";
+function genScramble(){
+  var lines=[];for(var i=0;i<32;i++){var l="";for(var j=0;j<120;j++)l+=scramChars[Math.floor(Math.random()*scramChars.length)];lines.push(l)}
+  return lines.join("\n");
+}
+function updateScramble(){
+  var el=document.getElementById("scramble");
+  if(S.decoded){el.classList.add("done");return}
+  el.classList.remove("done");
+  el.textContent=genScramble();
+}
+
+function startDecode(){
+  S.decoded=false;S.scramT=0;
+  updateScramble();
+  var decodeInterval=setInterval(function(){
+    S.scramT+=16;
+    if(S.scramT>1200){S.decoded=true;updateScramble();clearInterval(decodeInterval)}
+    else{document.getElementById("scramble").textContent=genScramble()}
+  },50);
+}
+
+// DOT GRID
+function buildDots(){
+  var g=document.getElementById("dotgrid");var h="";
+  for(var y=0;y<4;y++)for(var x=0;x<160;x++){h+='<span style="left:'+(x*12+4)+'px;top:'+(y*5+2)+'px"></span>'}
+  g.innerHTML=h;
+}
+
+// RENDER
+function render(){
+  var p=pr();var l=ll();var mx=(p.d!=null&&p.b!=null)?p.d-p.b:0;
+  S.age=Math.min(Math.round(S.fAge),mx);
+  var isF=p.id==="EARTH_HUMANITY_41";var isG=isF||p.id==="CAP-2026-SS";
+  var span=Math.max(mx,1);var tabP=(Math.min(7,span)/span)*100;
+
+  document.getElementById("hsub").textContent=l.sub;
+  var ev=typeof p.e==="number"?p.e.toLocaleString("pt-PT"):p.e;
+  var eb=document.getElementById("errbox");eb.textContent=l.err+": "+ev;
+  eb.className="err-box"+(typeof p.e==="number"&&p.e<100?" lo":"");
+  document.getElementById("loghdr").textContent=l.log;
+  document.getElementById("rtitle").textContent=l.prf;
+  document.getElementById("ftl").textContent=l.ft;
+  document.getElementById("ftr").textContent=l.pu;
+
+  // CARD
+  var stV=tx(p.st);var stE=stV.indexOf("ERR")>=0||stV.indexOf("DISSOL")>=0||stV.indexOf("ERRO")>=0;
+  var card=document.getElementById("pcard");
+  card.innerHTML='<div class="photo-wrap" id="photow"><div class="photo-sil"></div><div class="corner c-tl"></div><div class="corner c-tr"></div><div class="corner c-bl"></div><div class="corner c-br"></div></div>'+
+    '<div class="pname">'+p.nm+'</div><div class="pocc">'+tx(p.oc)+'</div>'+
+    '<div class="pfields">'+
+    '<div class="pf"><span class="pl">'+l.bi+'</span> <span class="pv">'+(p.b!=null?p.b:"—")+'</span></div>'+
+    '<div class="pf"><span class="pl">'+l.di+'</span> <span class="pv">'+(p.d!=null?p.d:"—")+'</span></div>'+
+    '<div class="pf"><span class="pl">'+l.ca+'</span> <span class="pv">'+tx(p.ca)+'</span></div>'+
+    '<div class="pf"><span class="pl">'+l.er+'</span> <span class="pv">'+tx(p.er)+'</span></div>'+
+    '<div class="pf" style="grid-column:span 2"><span class="pl">'+l.st+'</span> <span class="pv'+(stE?" er":"")+'">'+stV+'</span></div>'+
+    '</div>'+
+    '<div class="pflags">'+p.fl.map(function(f){return'<span'+(f.indexOf("ERR")>=0?' class="re"':'')+'>'+f+'</span>'}).join("")+'</div>'+
+    '<div class="pjudge"><div class="jl">'+l.jg+'</div><div class="jv" style="color:'+(jcm[p.jc]||"var(--amber)")+'">'+tx(p.j)+'</div><div class="jd">'+tx(p.jt)+'</div></div>';
+
+  document.getElementById("photow").addEventListener("click",function(){
+    S.i=(S.i+1)%D.length;var np=pr();S.fAge=(np.d!=null&&np.b!=null)?np.d-np.b:0;S.play=false;
+    document.getElementById("playbtn").textContent="▶";document.getElementById("playbtn").classList.remove("on");
+    startDecode();render();
+  });
+
+  // LOG
+  var body=document.getElementById("logbody");var h="";
+  p.ev.forEach(function(ev,i){
+    var isTab=ev.a!==null&&ev.a<7;var isHi=ev.y!==null&&p.b!==null&&ev.y<=(p.b||0)+S.age;
+    var cls="le"+(isTab?" dim":"")+(!isTab&&!isHi?" fut":"");
+    h+='<div class="'+cls+'" data-age="'+(ev.a!=null?ev.a:"")+'"><div class="lb" style="background:'+(cc[ev.c]||"transparent")+'"></div>'+
+      '<div style="display:flex;gap:6px;align-items:baseline"><span class="ly">'+(ev.y!=null?ev.y:"—")+'</span><span class="la">'+(ev.a!=null?"["+ev.a+"]":"[—]")+'</span>'+
+      '<span class="lt" style="color:'+(ev.c==="e"?"var(--red)":isTab?"var(--grey)":"var(--amber)")+'">'+tx(ev.t)+'</span>'+
+      (ev.w!==0?'<span class="lw" style="color:'+(ev.w>0?"var(--teal)":"var(--red)")+'">'+(ev.w>0?"+":"")+ev.w+'</span>':"")+
+      '</div></div>';
+  });
+  if(p.rd.length>0){
+    h+='<div class="rsec"><div class="rh">── '+l.po+' ──</div>';
+    p.rd.forEach(function(r){h+='<div class="rl">'+r+'</div>'});h+='</div>';
+  }
+  body.innerHTML=h;
+  body.querySelectorAll(".le").forEach(function(el){el.addEventListener("click",function(){var a=this.getAttribute("data-age");if(a!==""){S.fAge=parseInt(a);S.play=false;document.getElementById("playbtn").textContent="▶";document.getElementById("playbtn").classList.remove("on");render()}})});
+
+  // RADAR
+  renderRadar(isG);
+
+  // TIMELINE
+  var tl=document.getElementById("tltrack");
+  if(isF){tl.innerHTML='<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--red);font-family:var(--fm);font-size:12px;letter-spacing:.1em">'+l.tna+'</div>';return}
+  var th2="";var nL=Math.min(Math.ceil(span/10)+1,16);
+  th2+='<div class="tlyr">';for(var i=0;i<nL;i++){var yr=(p.b||0)+i*10;if(yr>(p.d||0))break;th2+='<span>'+yr+'</span>'}th2+='</div>';
+  th2+='<div class="tlline"><div class="tlpre" style="width:'+tabP+'%;background:var(--grey)"></div><div class="tlpost" style="left:'+tabP+'%;width:'+(100-tabP)+'%;background:var(--ad)"></div></div>';
+  if(tabP<85)th2+='<div style="position:absolute;top:42px;left:'+(tabP/2)+'%;transform:translateX(-50%);font-family:var(--fm);font-size:7px;color:var(--grey);letter-spacing:.12em">'+l.pm+'</div>';
+  p.ev.forEach(function(ev){if(ev.y===null)return;var pct=((ev.y-(p.b||0))/span)*100;th2+='<div class="tldot" style="left:calc(16px + '+(pct)+'% * (100% - 32px) / 100%);background:'+(cc[ev.c]||"var(--ad)")+'"></div>'});
+  var scrP=(S.age/span)*100;
+  th2+='<div class="tlscrub" style="left:calc(16px + '+scrP+'% * (100% - 32px) / 100%);background:var(--ab)"></div>';
+  th2+='<div class="tlslbl" style="left:calc(16px + '+scrP+'% * (100% - 32px) / 100%);color:var(--ab)">'+((p.b||0)+S.age)+' · '+S.age+'a</div>';
+  var ec=p.ev.filter(function(e){return e.y!==null&&e.y<=(p.b||0)+S.age}).length;
+  th2+='<div class="tlinfo"><span>'+l.ev+': '+ec+'</span><span style="color:'+(p.cf!==null&&p.cf<50?'var(--red)':'var(--teal)')+'">'+l.cf+': '+(p.cf!==null?p.cf.toFixed(1)+'%':'ERR')+'</span></div>';
+  tl.innerHTML=th2;
+}
+
+function renderRadar(gl){
+  var p2=pr();var scores=interp(p2.sc,S.fAge);
+  var sz=600,cx=sz/2,cy=sz/2,r=sz*.37,n=7,step=Math.PI*2/n,off=-Math.PI/2;
+  function pt(i,v){var a=off+i*step;return[cx+Math.cos(a)*(v/100)*r,cy+Math.sin(a)*(v/100)*r]}
+  var hasNull=scores.some(function(v){return v===null||isNaN(v)});
+  var svg='<svg width="100%" viewBox="0 0 '+sz+' '+sz+'" style="overflow:visible"><defs><filter id="rg"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+  [20,40,60,80,100].forEach(function(rv){var pts=[];for(var i=0;i<n;i++)pts.push(pt(i,rv).join(","));
+    svg+='<polygon points="'+pts.join(" ")+'" fill="none" stroke="'+(rv===60?"var(--ad)":"var(--gd)")+'" stroke-width="'+(rv===60?'1':'.5')+'" '+(rv===60?'stroke-dasharray="5 3"':'')+' opacity="'+(rv===60?'.5':'.2')+'"/>'});
+  for(var i=0;i<n;i++){var ep=pt(i,118);var lp=pt(i,100);
+    svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+lp[0]+'" y2="'+lp[1]+'" stroke="var(--gd)" stroke-width=".4" opacity=".15"/>';
+    svg+='<text x="'+ep[0]+'" y="'+ep[1]+'" text-anchor="middle" dominant-baseline="middle" fill="var(--ad)" font-size="10" font-family="\'Space Grotesk\',sans-serif" font-weight="500" style="letter-spacing:.08em">'+AX[i]+'</text>'}
+  if(!hasNull){
+    svg+='<polygon points="'+scores.map(function(v,i){return pt(i,v).join(",")}).join(" ")+'" fill="'+(gl?'rgba(192,69,53,.08)':'rgba(212,144,64,.05)')+'" stroke="'+(gl?'var(--red)':'var(--amber)')+'" stroke-width="2" style="filter:url(#rg);transition:all .3s ease-out"/>';
+    scores.forEach(function(v,i){var pp=pt(i,v);svg+='<circle cx="'+pp[0]+'" cy="'+pp[1]+'" r="4" fill="'+(v>65?"var(--red)":v<35?"var(--teal)":"var(--amber)")+'" stroke="var(--bg)" stroke-width="1.5"/>'});
+  }else{svg+='<text x="'+cx+'" y="'+cy+'" text-anchor="middle" fill="var(--red)" font-size="14" font-family="monospace" dominant-baseline="middle">ERR::NULL</text>'}
+  svg+='</svg>';
+  var wrap=document.getElementById("rwrap");wrap.innerHTML=svg;
+  if(!hasNull)scores.forEach(function(v,i){var ang=off+i*step,d=r*1.35;var x=cx+Math.cos(ang)*d,y=cy+Math.sin(ang)*d;
+    var lbl=document.createElement("div");lbl.className="slbl";lbl.style.cssText="left:"+(x/sz*100)+"%;top:"+(y/sz*100)+"%;color:"+(v>65?"var(--red)":v<35?"var(--teal)":"var(--ad)");lbl.textContent=v.toFixed(1);wrap.appendChild(lbl)});
+  // Earth overlay
+  var ex=document.querySelector(".eov");if(ex)ex.remove();
+  if(p2.id==="EARTH_HUMANITY_41"){var ov=document.createElement("div");ov.className="eov";var l2=ll();
+    ov.innerHTML='<div class="ebox"><div class="ep">'+l2.sv+'</div><div class="ebtns">'+(S.lang===0?'<button class="eb">[ GUARDAR ]</button><button class="eb">[ NÃO GUARDAR ]</button><button class="eb">[ CANCELAR ]</button>':'<button class="eb">[ SAVE ]</button><button class="eb">[ DON\'T SAVE ]</button><button class="eb">[ CANCEL ]</button>')+'</div><div class="blk">█</div></div>';
+    document.getElementById("rcol").appendChild(ov)}
+}
+
+// TIMELINE INTERACTION
+function handleTL(cx){
+  var p2=pr();if(p2.id==="EARTH_HUMANITY_41")return;
+  var el=document.getElementById("tltrack");var r=el.getBoundingClientRect();
+  var pct=Math.max(0,Math.min(1,(cx-r.left-16)/(r.width-32)));
+  var mx=(p2.d!=null&&p2.b!=null)?p2.d-p2.b:0;
+  S.fAge=pct*mx;S.play=false;document.getElementById("playbtn").textContent="▶";document.getElementById("playbtn").classList.remove("on");
+  render();
+}
+document.getElementById("tltrack").addEventListener("mousedown",function(e){handleTL(e.clientX)});
+document.getElementById("tltrack").addEventListener("mousemove",function(e){if(e.buttons===1)handleTL(e.clientX)});
+document.getElementById("tltrack").addEventListener("touchstart",function(e){e.preventDefault();handleTL(e.touches[0].clientX)},{passive:false});
+document.getElementById("tltrack").addEventListener("touchmove",function(e){e.preventDefault();handleTL(e.touches[0].clientX)},{passive:false});
+
+// TOGGLES
+document.getElementById("tgl-lang").addEventListener("click",function(e){
+  if(e.target.tagName!=="BUTTON")return;S.lang=parseInt(e.target.getAttribute("data-v"));
+  this.querySelectorAll("button").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-v")==String(S.lang))});render()});
+document.getElementById("tgl-theme").addEventListener("click",function(e){
+  if(e.target.tagName!=="BUTTON")return;var v=e.target.getAttribute("data-v");
+  document.body.classList.toggle("L",v==="light");
+  this.querySelectorAll("button").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-v")===v)})});
+
+// PLAY
+document.getElementById("playbtn").addEventListener("click",function(){
+  S.play=!S.play;this.textContent=S.play?"⏸":"▶";this.classList.toggle("on",S.play);
+  if(S.play){var p2=pr();var mx=(p2.d!=null&&p2.b!=null)?p2.d-p2.b:0;if(S.fAge>=mx)S.fAge=0}
+});
+document.querySelectorAll(".sbtn").forEach(function(b){b.addEventListener("click",function(){
+  S.spd=parseFloat(this.getAttribute("data-s"));
+  document.querySelectorAll(".sbtn").forEach(function(x){x.classList.remove("on")});this.classList.add("on")})});
+
+// Close dropdown
+document.addEventListener("click",function(e){if(!e.target.closest(".sel-wrap")){var d=document.getElementById("dropdown");if(d)d.classList.remove("open")}});
+
+// ANIMATION
+var lastT=0;
+function tick(ts){
+  var dt=ts-lastT;lastT=ts;if(dt>100)dt=16;
+  // Scanline
+  S.scY=(S.scY+0.15)%100;document.getElementById("scan").style.top=S.scY+"%";
+  // Smooth play
+  if(S.play){
+    var p2=pr();var mx=(p2.d!=null&&p2.b!=null)?p2.d-p2.b:0;
+    S.fAge+=dt*0.003*S.spd; // smooth fractional increment
+    if(S.fAge>=mx){S.fAge=mx;S.play=false;document.getElementById("playbtn").textContent="▶";document.getElementById("playbtn").classList.remove("on")}
+    render();
+  }
+  requestAnimationFrame(tick);
+}
+
+// INIT
+buildDots();
+S.decoded=false;startDecode();
+var ip=pr();S.fAge=(ip.d!=null&&ip.b!=null)?ip.d-ip.b:0;
+render();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
